@@ -11,23 +11,20 @@ env:
   IMAGE: us-docker.pkg.dev/kxnwork/backend-repo/backend:latest
   CLUSTER: backend-gke
   ZONE: us-central1-c
-  USE_GKE_GCLOUD_AUTH_PLUGIN: "True"   # ⭐ REQUIRED FIX
+  USE_GKE_GCLOUD_AUTH_PLUGIN: "True"
 
 jobs:
   build-deploy:
     runs-on: ubuntu-latest
 
     permissions:
-      id-token: write        # Required for OIDC
+      id-token: write
       contents: read
 
     steps:
     - name: Checkout source
       uses: actions/checkout@v4
 
-    # ---------------------------
-    # OIDC Authentication
-    # ---------------------------
     - name: Authenticate to Google Cloud using OIDC
       uses: google-github-actions/auth@v2
       with:
@@ -38,6 +35,10 @@ jobs:
       uses: google-github-actions/setup-gcloud@v2
       with:
         project_id: kxnwork
+
+    # ⭐ FIX: Install correct kubectl from gcloud (includes GKE auth plugin)
+    - name: Install kubectl (GKE compatible)
+      run: gcloud components install kubectl --quiet
 
     - name: Configure Docker for Artifact Registry
       run: gcloud auth configure-docker us-docker.pkg.dev
