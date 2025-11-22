@@ -1,0 +1,47 @@
+
+name: Build & Deploy Backend to GKE
+
+on:
+  push:
+    branches: ["main"]
+
+env:
+  PROJECT_ID: kxnwork
+  REGION: us
+  REPO_NAME: backend-repo
+  IMAGE: us-docker.pkg.dev/kxnwork/backend-repo/backend:latest
+  CLUSTER: backend-gke
+  ZONE: us-central1-c
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v4
+
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+    - name: Set up gcloud
+      uses: google-github-actions/setup-gcloud@v2
+
+    - name: Configure Docker for Artifact Registry
+      run: gcloud auth configure-docker us-docker.pkg.dev
+
+    - name: Build & Push Docker image
+      run: |
+        docker build -t $IMAGE ./backend
+        docker push $IMAGE
+
+    - name: Get GKE credentials
+      run: gcloud container clusters get-credentials $CLUSTER --zone $ZONE --project $PROJECT_ID
+
+    - name: Deploy to GKE
+      run: |
+        sed -i "s|us-docker.pkg.dev/PROJECT_ID/backend-repo/backend:latest|$IMAGE|" k8s/deployment.yaml
+        kubectl apply -f k8s/deployment.yaml
+        kubectl apply -f k8s/service.yaml
