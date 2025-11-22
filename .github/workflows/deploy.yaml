@@ -1,4 +1,3 @@
-
 name: Build & Deploy Backend to GKE
 
 on:
@@ -17,17 +16,27 @@ jobs:
   build-deploy:
     runs-on: ubuntu-latest
 
+    permissions:
+      id-token: write     # IMPORTANT for OIDC
+      contents: read
+
     steps:
     - name: Checkout source
       uses: actions/checkout@v4
 
-    - name: Authenticate to Google Cloud
+    # ----------------------
+    # OIDC Authentication
+    # ----------------------
+    - name: Authenticate to Google Cloud using OIDC
       uses: google-github-actions/auth@v2
       with:
-        credentials_json: ${{ secrets.GCP_SA_KEY }}
+        workload_identity_provider: "projects/382207431122/locations/global/workloadIdentityPools/github-pool-priii/providers/github-provider-priii"
+        service_account: "github-deployer-priii@kxnwork.iam.gserviceaccount.com"
 
-    - name: Set up gcloud
+    - name: Set up gcloud CLI
       uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: kxnwork
 
     - name: Configure Docker for Artifact Registry
       run: gcloud auth configure-docker us-docker.pkg.dev
@@ -42,6 +51,6 @@ jobs:
 
     - name: Deploy to GKE
       run: |
-        sed -i "s|us-docker.pkg.dev/PROJECT_ID/backend-repo/backend:latest|$IMAGE|" k8s/deployment.yaml
+        kubectl set image deployment/backend backend=$IMAGE
         kubectl apply -f k8s/deployment.yaml
         kubectl apply -f k8s/service.yaml
