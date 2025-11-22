@@ -17,13 +17,16 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      id-token: write
+      id-token: write        # Required for OIDC
       contents: read
 
     steps:
     - name: Checkout source
       uses: actions/checkout@v4
 
+    # ---------------------------
+    # OIDC Authentication
+    # ---------------------------
     - name: Authenticate to Google Cloud using OIDC
       uses: google-github-actions/auth@v2
       with:
@@ -35,10 +38,12 @@ jobs:
       with:
         project_id: kxnwork
 
+    # ---------------------------
+    # Install GKE Auth Plugin (IMPORTANT)
+    # Works on Ubuntu 24.04 runner
+    # ---------------------------
     - name: Install GKE Auth Plugin
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y google-cloud-sdk-gke-gcloud-auth-plugin
+      run: pip install gke-gcloud-auth-plugin
 
     - name: Configure Docker for Artifact Registry
       run: gcloud auth configure-docker us-docker.pkg.dev
