@@ -11,6 +11,7 @@ env:
   IMAGE: us-docker.pkg.dev/kxnwork/backend-repo/backend:latest
   CLUSTER: backend-gke
   ZONE: us-central1-c
+  USE_GKE_GCLOUD_AUTH_PLUGIN: "True"   # ⭐ REQUIRED FIX
 
 jobs:
   build-deploy:
@@ -37,13 +38,6 @@ jobs:
       uses: google-github-actions/setup-gcloud@v2
       with:
         project_id: kxnwork
-
-    # ---------------------------
-    # Install GKE Auth Plugin (IMPORTANT)
-    # Works on Ubuntu 24.04 runner
-    # ---------------------------
-    - name: Install GKE Auth Plugin
-      run: pip install gke-gcloud-auth-plugin
 
     - name: Configure Docker for Artifact Registry
       run: gcloud auth configure-docker us-docker.pkg.dev
